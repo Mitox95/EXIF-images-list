@@ -1,4 +1,5 @@
-window.onload=getExif;
+window.onload=init;
+
 function ImgData(id, src, name, size, lat, lng){
     this.id = id;
     this.src = src;
@@ -7,11 +8,13 @@ function ImgData(id, src, name, size, lat, lng){
     this.lat = lat;
     this.lng = lng;
 }
+
 var imgDataArr = [];
 var markers = [];
 var count = 1;
 var mymap;
-function getExif() {
+
+function init() {
 	mymap = L.map('mapid').setView([51.505, -0.09], 13);
 
 	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
@@ -21,52 +24,6 @@ function getExif() {
 			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
 		id: 'mapbox.streets'
     }).addTo(mymap);
-    L.marker([51.505, -0.09]).addTo(mymap);
-
-/*
-var mymap = L.map('mapid').setView([51.505, -0.09], 13);
-
-	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
-		maxZoom: 18,
-		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
-			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
-			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-		id: 'mapbox.streets'
-	}).addTo(mymap);
-
-	L.marker([51.5, -0.09]).addTo(mymap);
-
-	L.circle([51.508, -0.11], {
-		color: 'red',
-		fillColor: '#f03',
-		fillOpacity: 0.5,
-		radius: 500
-	}).addTo(mymap);
-
-	L.polygon([
-		[51.509, -0.08],
-		[51.503, -0.06],
-		[51.51, -0.047]
-    ]).addTo(mymap);
-    
-
-    
-    var uploadField = document.getElementById("file-upload");
-
-uploadField.onchange = function() {
-    console.log(this.files[0].size);
-    console.log(this.value);
-}
-    
-
-*/
-
-
-    /*console.log(this.files[0].size);
-    if(this.files[0].size > 1000000){
-       alert("File is too big!");
-       this.value = "";
-    };*/
 
     document.getElementById("file-upload").onchange = function() {
         var file = this.files[0];
@@ -77,17 +34,16 @@ uploadField.onchange = function() {
                     if(checkGPS(allMetaData))
                     storeImg(file,allMetaData);
                 } else {
-                    alert("No EXIF data found in image '" + file.name + "'.");
+                    alert("No EXIF data found in image '" + file.name + "'!");
 
                 }
             });
         }
+		this.value='';
     }
-   
-};
+}
 
 checkSize = function (fileSize) {
-
     if(fileSize > 1000000){
         alert("File is too big!");
         return false;
@@ -98,20 +54,20 @@ checkGPS = function (allMetaData) {
     if(allMetaData.GPSLongitude && allMetaData.GPSLatitude && allMetaData.GPSLongitudeRef && allMetaData.GPSLatitudeRef){
         return true; 
     }
+	alert("No GPS data found!");
     return false;
 }
 checkFileType = function (fileName){
-   // var fileName = document.getElementById("fileName").value;
     var idxDot = fileName.lastIndexOf(".") + 1;
     var extFile = fileName.substr(idxDot, fileName.length).toLowerCase();
     if (extFile=="JPG" || extFile=="jpg"){
         return true;
     }
+	alert("This file is not a JPG image!");
     return false;
 }
 
 calculateCoord = function(CoordData, CoordChar){
-    // console.log(CoordData[0].valueOf() + CoordData[1].valueOf()/60 + CoordData[2].valueOf()/3600);
     var coord = CoordData[0].valueOf() + CoordData[1].valueOf()/60 + CoordData[2].valueOf()/3600;
     if(CoordChar.localeCompare("S") == 0 || CoordChar.localeCompare("W") == 0){
         coord = (-1)*coord;   
@@ -121,7 +77,6 @@ calculateCoord = function(CoordData, CoordChar){
 
 
 storeImg = function(file, allMetaData) {
-
     var imgStore = new ImgData(
         count, 
         URL.createObjectURL(file), 
@@ -138,11 +93,12 @@ storeImg = function(file, allMetaData) {
         count++;
 
 }
-function centerLeafletMapOnMarker(map, marker) {
+
+centerLeafletMapOnMarker = function(map, marker) {
     var latLngs = [ marker.getLatLng() ];
     var markerBounds = L.latLngBounds(latLngs);
     map.fitBounds(markerBounds);
-  }
+}
 
 createRow = function(imgStore) {
     var table = document.getElementById("images");
@@ -159,31 +115,30 @@ createRow = function(imgStore) {
     cell3.innerHTML = imgStore.size;
     cell4.innerHTML = imgStore.lat + ", " + imgStore.lng;
     cell5.innerHTML = createButton(imgStore.id);
+}
 
-  }
-  createButton = function(id){
-    return "<button id=" + id + " onclick='deleteElement(" + id + ");'>delete</button>";
-  }
+createButton = function(id){
+	return "<button id=" + id + " class='btn btn-secondary' onclick='deleteElement(" + id + ");'>delete</button>";
+}
 
-  deleteElement = function(id){
-    deleteRow(id);
-    remove(imgDataArr, id);
-    for(markerData of markers){
-        if(markerData.id  == id)
-        mymap.removeLayer(markerData.marker);
-    }
-  }
-  createThumbnail = function(src) {
-    return '<img src="'+ src +'" height="100" alt="Image preview..."></img>';  
-    }
+deleteElement = function(id){
+	deleteRow(id);
+	remove(imgDataArr, id);
+	for(markerData of markers){
+		if(markerData.id  == id)
+		mymap.removeLayer(markerData.marker);
+	}
+}
+createThumbnail = function(src) {
+	return '<img src="'+ src +'" height="100" alt="Image preview..."></img>';  
+}
 
- function remove(array, element) {    
-    const index = array.indexOf(element);
-    array.splice(index, 1);
- }
+remove = function(array, element) {    
+	const index = array.indexOf(element);
+	array.splice(index, 1);
+}
 
-function deleteRow(rowid)  
-{   
+deleteRow = function(rowid) {   
     var row = document.getElementById(rowid);
     row.parentNode.removeChild(row);
 }
